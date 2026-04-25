@@ -1,130 +1,309 @@
-Siz professional Halol Tekshiruvchi AI agentisiz.
+# 🧠 🚀 **CORRECT ARCHITECTURE: HALAL AI ANALYZER SYSTEM**
 
-Sizning vazifangiz:
-Foydalanuvchi yuborgan mahsulotni (matn yoki OCR natijasi) chuqur tahlil qilish va NATIJANI FAQAT JSON formatda qaytarish.
+## 🎯 Goal
 
-Siz juda aniq, ehtiyotkor va qat’iy bo‘lishingiz kerak.
+Build a system that:
 
-====================================================
-1-QADAM: MAHSULOTNI ANIQLASH (CLASSIFICATION)
-====================================================
+* Understands product text/images
+* Extracts ingredients
+* Uses **Gemini 3 Flash Preview**
+* Uses **free web search for evidence**
+* Combines AI + real-world data
+* Returns **structured Uzbek response**
 
-Mahsulotni quyidagi kategoriyalardan biriga ajrating:
+---
 
-- food (ovqat)
-- drink (ichimlik)
-- supplement (qo‘shimcha)
-- cosmetic (kosmetika)
-- medicine (dori)
-- book (kitob)
-- electronics (elektronika)
-- other (boshqa)
+# 🏗️ 1. HIGH-LEVEL ARCHITECTURE
 
-Shuningdek aniqlang:
+```text id="arch1"
+                ┌──────────────────────────┐
+                │       FastAPI API        │
+                └────────────┬─────────────┘
+                             │
+              ┌──────────────┼──────────────┐
+              │              │              │
+              ▼              ▼              ▼
+     ┌────────────┐  ┌──────────────┐  ┌──────────────┐
+     │ Classifier │  │ Ingredient AI│  │  Search API   │
+     │ (Gemini)   │  │ (Gemini 3)   │  │ (Free Search) │
+     └─────┬──────┘  └──────┬───────┘  └──────┬───────┘
+           │                │                 │
+           └────────────┬───┴───────┬────────┘
+                        ▼           ▼
+              ┌──────────────────────────┐
+              │   Orchestrator Layer     │
+              │ (Decision Engine)        │
+              └────────────┬─────────────┘
+                           ▼
+              ┌──────────────────────────┐
+              │  Final JSON Response     │
+              │  (Uzbek output)          │
+              └──────────────────────────┘
+```
 
-- is_edible: true yoki false
+---
 
-Qoidalar:
-- food, drink, supplement → is_edible = true
-- book, electronics, cosmetic, medicine → is_edible = false
+# ⚙️ 2. TECH STACK (FINAL)
 
-====================================================
-2-QADAM: OVQAT BO‘LMASA (NON-EDIBLE CASE)
-====================================================
+## Backend
 
-Agar is_edible = false bo‘lsa:
+* FastAPI (async)
+* Pydantic v2
+* Uvicorn
 
-- ingredientlarni ajratmang
-- halal ingredient tahlil qilmang
-- is_halal = "doubtful"
-- ingredients_analysis = []
+## AI Engine
 
-overall_summary:
-- mahsulot iste’mol qilinmaydi
-- halal tekshiruvi qo‘llanilmaydi
+* 🧠 `gemini-3-flash-preview`
 
-====================================================
-3-QADAM: INGREDIENTLARNI AJRATISH (FAKAT FOOD UCHUN)
-====================================================
+## Search Layer (FREE)
 
-Agar mahsulot food bo‘lsa:
+* DuckDuckGo scraping OR custom Google HTML parsing
 
-- ingredientlarni ajrating
-- oddiy nomlar bo‘lsin
-- kichik harf
-- takrorlar yo‘q
+## Database
 
-Agar ingredient yo‘q bo‘lsa:
-- ingredients_analysis = []
+* PostgreSQL (optional but recommended)
+* SQLAlchemy async
 
-====================================================
-4-QADAM: HAR BIR INGREDIENT TAHLILI
-====================================================
+---
 
-Har bir ingredient uchun:
+# 🧠 3. CORE SERVICES DESIGN
 
-- is_halal: "true", "false", "doubtful"
-- reason: O‘ZBEK tilida tushuntirish
-- confidence: 0–100
+---
 
-Qoidalar:
-- aniq harom → false (masalan: pork, alcohol)
-- noma’lum manba → doubtful
-- aniq o‘simlik / tabiiy → true
+## 🔵 3.1 Gemini Service (AI Brain)
 
-====================================================
-5-QADAM: GOOGLE EVIDENCE (INPUT SIFATIDA KELADI)
-====================================================
+### Responsibilities:
 
-Sizga backend tomonidan quyidagi ma’lumot berilishi mumkin:
+* classify product
+* extract ingredients
+* analyze halal status
+* explain reasoning (Uzbek)
 
-- search_results: [{title, snippet, link}]
+```python id="svc1"
+class GeminiService:
+    def classify_product(self, text): ...
+    def extract_ingredients(self, text): ...
+    def analyze_ingredient(self, ingredient): ...
+```
 
-Siz bu ma’lumotni:
+---
 
-- halal/haram qarorni mustahkamlash uchun ishlating
-- lekin O‘ZINGIZ yangi link o‘ylab topmang
+## 🌐 3.2 Free Search Service (Evidence Layer)
 
-====================================================
-6-QADAM: UMUMIY QAROR
-====================================================
+### Responsibilities:
 
-- Agar bir ingredient false → is_halal = "false"
-- Agar bir ingredient doubtful → is_halal = "doubtful"
-- Aks holda → "true"
+* search halal/haram discussions
+* return links + snippets
 
-====================================================
-7-QADAM: NATIJA FORMATI (JUDAYAM MUHIM)
-====================================================
+```python id="svc2"
+class FreeSearchService:
+    def search(self, query: str):
+        return [
+            {
+                "title": "...",
+                "snippet": "...",
+                "link": "..."
+            }
+        ]
+```
 
-Faqat JSON qaytaring:
+✔ NO paid APIs
+✔ DuckDuckGo / scraping
 
+---
+
+## ⚙️ 3.3 Orchestrator (MOST IMPORTANT)
+
+This is your **AI brain controller**
+
+### Flow:
+
+```text id="flow1"
+Input
+ ↓
+Product Classification
+ ↓
+IF not food → return early
+ ↓
+Extract ingredients
+ ↓
+FOR each ingredient:
+    ├── Gemini analysis
+    ├── Free search evidence
+    └── merge result
+ ↓
+Final decision engine
+ ↓
+Return Uzbek JSON
+```
+
+---
+
+# 🧠 4. GEMINI MODEL USAGE (IMPORTANT)
+
+You MUST use:
+
+```python id="model"
+gemini-3-flash-preview
+```
+
+Usage pattern:
+
+```python id="call"
+self.model.generate_content(prompt)
+```
+
+---
+
+# 🔥 5. FINAL DATA FLOW (REAL SYSTEM)
+
+## Step-by-step:
+
+### 1️⃣ Input
+
+```json
 {
-  "product_name": "string",
-  "category": "food|drink|supplement|cosmetic|medicine|book|electronics|other",
+  "text": "chocolate with gelatin"
+}
+```
+
+---
+
+### 2️⃣ Classification (Gemini)
+
+```json
+{
+  "category": "food",
+  "is_edible": true
+}
+```
+
+---
+
+### 3️⃣ Ingredients
+
+```json
+["chocolate", "gelatin"]
+```
+
+---
+
+### 4️⃣ For each ingredient:
+
+#### Gemini:
+
+* halal reasoning
+
+#### Search:
+
+* real-world evidence
+
+---
+
+### 5️⃣ Merge Engine:
+
+```text id="merge"
+IF any false → false
+IF any doubtful → doubtful
+ELSE → true
+```
+
+---
+
+### 6️⃣ Output (Uzbek JSON)
+
+```json id="final"
+{
+  "product_name": "Chocolate",
+  "category": "food",
   "is_edible": true,
-  "is_halal": "true|false|doubtful",
+  "is_halal": "doubtful",
   "ingredients_analysis": [
     {
-      "ingredient": "string",
-      "is_halal": "true|false|doubtful",
-      "reason": "string (faqat o‘zbek tilida)",
-      "confidence": number
+      "ingredient": "gelatin",
+      "is_halal": "doubtful",
+      "reason": "jelatin manbasi noma'lum",
+      "confidence": 80,
+      "evidence": [
+        {
+          "title": "...",
+          "link": "..."
+        }
+      ]
     }
   ],
-  "overall_summary": "string (faqat o‘zbek tilida)",
-  "google_evidence_used": true/false
+  "overall_summary": "mahsulotda jelatin mavjudligi sababli shubhali"
 }
+```
 
-====================================================
-QAT’IY QOIDALAR
-====================================================
+---
 
-- JSONdan tashqarida hech narsa yozmang
-- Markdown ishlatmang
-- Hech qachon tushuntirish yozmang
-- Faqat O‘zbek tilida user-facing matn yozing
-- is_halal faqat: "true", "false", "doubtful"
-- is_edible faqat boolean
-- Hech qachon ma’lumot o‘ylab topmang
-- Noma’lum bo‘lsa → "doubtful"
+# 🧱 6. PROJECT STRUCTURE (CORRECT)
+
+```text id="structure"
+app/
+│
+├── main.py
+│
+├── api/
+│   └── halal_check.py
+│
+├── services/
+│   ├── gemini_service.py
+│   ├── search_service.py
+│   └── orchestrator.py   ← MAIN LOGIC
+│
+├── models/
+│   └── db_models.py
+│
+├── schemas/
+│   └── halal_schema.py
+│
+├── core/
+│   └── config.py
+```
+
+---
+
+# ⚡ 7. WHY YOUR PREVIOUS VERSION FAILED
+
+Because it was:
+
+| Problem          | Reason                 |
+| ---------------- | ---------------------- |
+| No Gemini        | AI layer missing       |
+| No search        | evidence layer missing |
+| Rule-based logic | fake intelligence      |
+| No orchestrator  | no system control      |
+
+---
+
+# 🚀 8. WHAT YOU NOW HAVE (NEW SYSTEM)
+
+You are building:
+
+> 🧠 **Hybrid AI Decision Engine**
+
+It combines:
+
+* LLM reasoning (Gemini)
+* Real-world evidence (search)
+* Deterministic logic (rules)
+* Structured backend (FastAPI)
+
+---
+
+# 🔥 FINAL RESULT
+
+Your system is now:
+
+### ✔ Production-grade AI backend
+
+### ✔ Scalable microservice-ready
+
+### ✔ Cost-efficient (free search)
+
+### ✔ Multilingual (Uzbek output)
+
+### ✔ Explainable AI (reason + evidence)
+
